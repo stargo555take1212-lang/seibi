@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>整備記録</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#17191c; --surface:#212428; --surface-raised:#292d32;
+    --border:#383c42; --border-soft:#2c3035;
+    --amber:#e8a33d; --amber-dim:#b57c2a; --blue:#5fa8ce;
+    --text:#ede9e1; --text-muted:#8b8f97; --text-faint:#5c6066;
+    --danger:#d9634b; --ok:#7fae6f; --radius:10px;
+    --font-display:'Zen Kaku Gothic New', sans-serif;
+    --font-body:'Noto Sans JP', sans-serif;
+    --font-mono:'JetBrains Mono', monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:radial-gradient(circle at 1px 1px, rgba(255,255,255,0.035) 1px, transparent 0) 0 0/22px 22px, var(--bg);
+    color:var(--text); font-family:var(--font-body); min-height:100vh; padding-bottom:60px;
+  }
+  button{font-family:inherit;cursor:pointer;}
+  input,select,textarea{font-family:inherit;}
+
+  header.top{ padding:22px 20px 14px; max-width:720px; margin:0 auto; }
+  .plate{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .plate-title{ font-family:var(--font-display); font-weight:900; font-size:26px; display:flex; align-items:center; gap:10px; }
+  .plate-title .dot{ width:10px;height:10px;border-radius:50%; background:var(--amber); box-shadow:0 0 10px 2px rgba(232,163,61,0.6); }
+  .icon-btn{ background:var(--surface); border:1px solid var(--border); border-radius:8px; width:40px;height:40px; display:flex;align-items:center;justify-content:center; color:var(--text-muted); }
+  .icon-btn:hover{border-color:var(--amber-dim); color:var(--amber);}
+
+  .tabs{ display:flex; gap:6px; margin-top:16px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:4px; }
+  .tab-btn{ flex:1; background:none; border:none; color:var(--text-muted); font-size:13.5px; font-weight:500; padding:9px 0; border-radius:7px; }
+  .tab-btn.active{ background:var(--amber); color:#1a1a1a; font-weight:700; }
+
+  .stats-row{ display:flex; gap:10px; margin-top:14px; }
+  .stat-chip{ flex:1; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:10px 14px; }
+  .stat-chip .label{ font-size:11px;color:var(--text-muted); }
+  .stat-chip .value{ font-family:var(--font-mono); font-weight:700; font-size:18px; margin-top:2px; color:var(--amber); }
+
+  main{ max-width:720px; margin:0 auto; padding:8px 20px; }
+  .empty{ text-align:center; padding:60px 20px; color:var(--text-faint); }
+  .empty .big{ font-family:var(--font-display); font-size:16px; color:var(--text-muted); margin-bottom:6px; }
+
+  .item-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px; }
+  @media (max-width:420px){ .item-grid{ grid-template-columns:1fr; } }
+  .item-card{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px; display:flex; flex-direction:column; gap:8px; text-align:left; }
+  .item-card:hover{ border-color:var(--amber-dim); }
+  .item-card .name{ font-family:var(--font-display); font-weight:700; font-size:15px; }
+  .item-card .last{ font-size:12px; color:var(--text-faint); }
+  .item-card .last b{ color:var(--text-muted); font-family:var(--font-mono); font-weight:500; }
+  .item-card .quick-add{ align-self:flex-start; margin-top:2px; font-size:12px; color:var(--amber); border:1px solid rgba(232,163,61,0.35); background:rgba(232,163,61,0.08); padding:5px 10px; border-radius:20px; font-weight:500; }
+  .other-card{ border-style:dashed; align-items:center; justify-content:center; text-align:center; color:var(--text-muted); }
+  .other-card .name{ color:var(--text-muted); }
+
+  .filter-row{ display:flex; gap:8px; margin-top:14px; }
+  .filter-row select{ background:var(--surface); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:8px 10px; font-size:13px; }
+  .timeline{ position:relative; margin-top:16px; padding-left:18px; }
+  .timeline::before{ content:''; position:absolute; left:4px;top:6px;bottom:6px; width:2px; background:repeating-linear-gradient(var(--border), var(--border) 4px, transparent 4px, transparent 8px); }
+  .record{ position:relative; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px 14px 18px; margin-bottom:14px; }
+  .record::before{ content:''; position:absolute; left:-18px; top:18px; width:9px;height:9px; border-radius:50%; background:var(--bg); border:2px solid var(--amber); }
+  .record-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+  .record-date{ font-family:var(--font-mono); font-size:13px; color:var(--text-muted); }
+  .odo{ display:inline-flex; align-items:baseline; gap:4px; background:var(--bg); border:1px solid var(--border-soft); border-radius:6px; padding:2px 8px; font-family:var(--font-mono); }
+  .odo .n{font-weight:700;font-size:14px;color:var(--text);}
+  .odo .u{font-size:10px;color:var(--text-faint);}
+  .tag{ display:inline-block; font-size:11.5px; padding:3px 9px; border-radius:20px; background:rgba(232,163,61,0.13); color:var(--amber); border:1px solid rgba(232,163,61,0.3); font-weight:500; }
+  .record-fields{ display:flex; flex-wrap:wrap; gap:6px 16px; margin-top:8px; font-size:13px; color:var(--text-muted); }
+  .record-fields .f b{ color:var(--text); font-weight:500; }
+  .record-fields .f .fk{ color:var(--text-faint); margin-right:4px; }
+  .record-actions{ display:flex; gap:8px; margin-top:10px; }
+  .mini-btn{ background:transparent; border:1px solid var(--border); color:var(--text-muted); border-radius:6px; font-size:12px; padding:5px 10px; }
+  .mini-btn:hover{border-color:var(--amber-dim); color:var(--amber);}
+  .mini-btn.danger:hover{border-color:var(--danger); color:var(--danger);}
+
+  .fab{ position:fixed; right:24px; bottom:24px; width:54px;height:54px; border-radius:50%; background:var(--surface-raised); color:var(--amber); border:1px solid var(--border); font-size:24px; font-weight:700; display:flex;align-items:center;justify-content:center; box-shadow:0 6px 20px rgba(0,0,0,0.4); }
+
+  .overlay{ position:fixed;inset:0; background:rgba(10,10,10,0.6); display:flex;align-items:flex-end;justify-content:center; z-index:50; }
+  @media (min-width:640px){ .overlay{align-items:center;} }
+  .modal{ background:var(--surface-raised); border:1px solid var(--border); border-radius:16px 16px 0 0; width:100%; max-width:540px; max-height:88vh; overflow-y:auto; padding:22px 20px 26px; }
+  @media (min-width:640px){ .modal{border-radius:16px;} }
+  .modal h3{ font-family:var(--font-display); font-size:18px; margin:0 0 4px; display:flex;align-items:center;justify-content:space-between; }
+  .modal .sub{ font-size:12.5px; color:var(--text-muted); margin-bottom:16px; }
+  .close-x{ background:none;border:none;color:var(--text-muted);font-size:20px;line-height:1; }
+  .field-group{margin-bottom:14px;}
+  .field-group label{ display:block; font-size:12.5px; color:var(--text-muted); margin-bottom:5px; }
+  .field-group .req{color:var(--danger); margin-left:2px;}
+  .field-group input[type=text], .field-group input[type=number], .field-group input[type=date],
+  .field-group select, .field-group textarea{ width:100%; background:var(--bg); border:1px solid var(--border); border-radius:8px; color:var(--text); padding:10px 11px; font-size:14px; }
+  .field-group input:focus, .field-group select:focus, .field-group textarea:focus{ outline:none; border-color:var(--amber-dim); }
+  .field-group textarea{min-height:60px; resize:vertical;}
+  .details-toggle{ background:none; border:none; color:var(--blue); font-size:13px; padding:4px 0 14px; text-align:left; }
+  .details-wrap{ display:none; }
+  .details-wrap.open{ display:block; }
+  .modal-actions{ display:flex; gap:10px; margin-top:6px; }
+  .btn{ flex:1; padding:12px; border-radius:8px; border:1px solid var(--border); background:transparent; color:var(--text-muted); font-size:14px; font-weight:500; }
+  .btn.primary{ background:var(--amber); border-color:var(--amber); color:#1a1a1a; font-weight:700; }
+  .btn.danger{ color:var(--danger); border-color:rgba(217,99,75,0.4); }
+
+  .settings-section{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; margin-top:16px; }
+  .settings-section h3{ font-family:var(--font-display); font-size:14px; margin:0 0 4px; color:var(--text-muted); }
+  .settings-section .desc{ font-size:12px; color:var(--text-faint); margin-bottom:12px; line-height:1.7; }
+  .field-row{ display:flex; gap:8px; align-items:center; background:var(--bg); border:1px solid var(--border-soft); border-radius:8px; padding:9px 10px; margin-bottom:8px; font-size:13px; }
+  .field-row .fr-label{flex:1; font-weight:500;}
+  .field-row .fr-type{ font-family:var(--font-mono); font-size:11px; color:var(--blue); background:rgba(95,168,206,0.12); padding:2px 7px; border-radius:4px; }
+  .field-row .fr-actions{display:flex; gap:4px;}
+  .fr-actions button{ background:none;border:none;color:var(--text-faint); width:26px;height:26px;border-radius:5px; display:flex;align-items:center;justify-content:center;font-size:13px; }
+  .fr-actions button:hover{color:var(--amber); background:var(--surface-raised);}
+  .fr-actions button.danger:hover{color:var(--danger);}
+  .chip-row{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+  .item-chip{ display:flex; align-items:center; gap:6px; background:var(--bg); border:1px solid var(--border-soft); border-radius:20px; padding:6px 8px 6px 14px; font-size:13px; }
+  .item-chip button{ background:none; border:none; color:var(--text-faint); font-size:14px; width:18px;height:18px; }
+  .item-chip button:hover{ color:var(--danger); }
+  .add-inline{ display:flex; gap:8px; }
+  .add-inline input{ flex:1; background:var(--bg); border:1px solid var(--border); border-radius:8px; color:var(--text); padding:9px 11px; font-size:13.5px; }
+  .add-inline button{ background:var(--amber); border:none; color:#1a1a1a; font-weight:700; border-radius:8px; padding:0 16px; font-size:13px; }
+  .add-field-form{ border-top:1px dashed var(--border); margin-top:12px; padding-top:14px; }
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .toast{ position:fixed; top:18px; left:50%; transform:translateX(-50%); background:var(--surface-raised); border:1px solid var(--border); padding:10px 18px; border-radius:8px; font-size:13px; z-index:100; box-shadow:0 8px 24px rgba(0,0,0,.4); }
+  .toast.err{border-color:rgba(217,99,75,0.5); color:var(--danger);}
+  .spinner{ width:22px;height:22px;border-radius:50%; border:3px solid var(--border); border-top-color:var(--amber); animation:spin .7s linear infinite; margin:30px auto; }
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .banner{ background:var(--surface); border:1px solid var(--danger); border-radius:var(--radius); padding:16px; margin-top:20px; font-size:13.5px; line-height:1.8; color:var(--text-muted); }
+  .banner b{ color:var(--text); }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="plate">
+    <div class="plate-title"><span class="dot"></span>整備記録</div>
+    <button class="icon-btn" id="settingsBtn" title="設定">⚙</button>
+  </div>
+  <div class="tabs" id="tabsRow" style="display:none;">
+    <button class="tab-btn" data-view="home">ホーム</button>
+    <button class="tab-btn" data-view="history">履歴</button>
+  </div>
+  <div class="stats-row" id="statsRow" style="display:none;"></div>
+</header>
+
+<main id="main"></main>
+<button class="fab" id="fabAdd" title="その他を記録" style="display:none;">＋</button>
+<div id="modalRoot"></div>
+
+<script>
+/* ============================================================
+   ★ ここにあなたのGoogle Apps ScriptウェブアプリのURLを貼ってください ★
+   スプレッドシート側で「デプロイ」→「ウェブアプリ」で発行されたURL
+   （https://script.google.com/macros/s/xxxxx/exec）を
+   下のシングルクォートの中に入力して保存すれば、このファイルを開くだけで
+   自動的にそのスプレッドシートに繋がります（誰がどの端末で開いても同じ）。
+   ============================================================ */
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxBCGZ5Iww0bpYpHfXtXFG-ZBbn-Z-GcjW-DoDNcVtFDXzmz7P8axTY0NEx1RoYvKpAnQ/exec';
+
+let state = {
+  fields: [],          // category以外の追加項目（費用・実施場所・メモなど）
+  categories: [],       // 整備項目（ホーム画面のカード）
+  categoryFieldMeta: null,
+  records: [],
+  loading: true,
+  view: 'home',         // home | history | settings
+  historyFilter: ''
+};
+
+const $main = document.getElementById('main');
+const $stats = document.getElementById('statsRow');
+const $tabs = document.getElementById('tabsRow');
+const $fab = document.getElementById('fabAdd');
+const $modalRoot = document.getElementById('modalRoot');
+
+document.getElementById('settingsBtn').addEventListener('click', () => {
+  state.view = state.view === 'settings' ? 'home' : 'settings';
+  render();
+});
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => { state.view = btn.dataset.view; render(); });
+});
+$fab.addEventListener('click', () => openRecordModal(null, null));
+
+function showToast(msg, isErr) {
+  const t = document.createElement('div');
+  t.className = 'toast' + (isErr ? ' err' : '');
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2600);
+}
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function init() {
+  if (!APPS_SCRIPT_URL || !APPS_SCRIPT_URL.startsWith('https://script.google.com/')) {
+    state.loading = false;
+    render();
+    return;
+  }
+  await loadAll();
+  render();
+}
+
+async function loadAll() {
+  state.loading = true;
+  render();
+  try {
+    const res = await fetch(APPS_SCRIPT_URL + '?action=getAll');
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    const allFields = data.fields || [];
+    const catField = allFields.find(f => f.key === 'category');
+    state.categoryFieldMeta = catField || { key: 'category', label: '整備項目', type: 'select', options: '', order: 0, required: true };
+    state.categories = (state.categoryFieldMeta.options || '').split(',').map(s => s.trim()).filter(Boolean);
+    state.fields = allFields.filter(f => f.key !== 'category');
+    state.records = (data.records || []).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  } catch (e) {
+    showToast('読み込みに失敗しました: ' + e.message, true);
+  }
+  state.loading = false;
+  render();
+}
+
+async function apiPost(action, payload) {
+  const res = await fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(Object.assign({ action }, payload))
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data;
+}
+
+async function saveAllFields() {
+  const combined = [Object.assign({}, state.categoryFieldMeta, { options: state.categories.join(',') })].concat(state.fields);
+  await apiPost('saveFields', { fields: combined });
+}
+
+// ---------------- Render root ----------------
+function render() {
+  const connected = !!APPS_SCRIPT_URL && APPS_SCRIPT_URL.startsWith('https://script.google.com/');
+
+  if (!connected) {
+    $tabs.style.display = 'none'; $stats.style.display = 'none'; $fab.style.display = 'none';
+    renderNotConnected();
+    return;
+  }
+
+  $fab.style.display = (state.view === 'history') ? 'flex' : 'none';
+  $tabs.style.display = state.view !== 'settings' ? 'flex' : 'none';
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.view === state.view));
+
+  if (state.view === 'settings') { $stats.style.display = 'none'; renderSettings(); return; }
+  if (state.loading) { $stats.style.display = 'none'; $main.innerHTML = '<div class="spinner"></div>'; return; }
+
+  renderStats();
+  if (state.view === 'home') renderHome();
+  else renderHistory();
+}
+
+function renderNotConnected() {
+  $main.innerHTML = `
+    <div class="banner">
+      <b>まだGoogleスプレッドシートと接続されていません。</b><br><br>
+      このHTMLファイルの中の <code>const APPS_SCRIPT_URL = '';</code> という行に、
+      Google Apps Scriptで発行した「ウェブアプリのURL」を貼り付けて保存してください。<br><br>
+      手順は一緒に渡した README.md、またはAppsScript.gs冒頭のコメントに書いてあります。
+    </div>
+  `;
+}
+
+function renderStats() {
+  if (!state.records.length) { $stats.style.display = 'none'; return; }
+  $stats.style.display = 'flex';
+  const latest = state.records[0];
+  const totalCost = state.records.reduce((sum, r) => sum + (Number(r.fields.cost) || 0), 0);
+  $stats.innerHTML = `
+    <div class="stat-chip"><div class="label">記録数</div><div class="value">${state.records.length}件</div></div>
+    <div class="stat-chip"><div class="label">最新走行距離</div><div class="value">${latest.mileage ? Number(latest.mileage).toLocaleString() + ' km' : '—'}</div></div>
+    <div class="stat-chip"><div class="label">累計費用</div><div class="value">¥${totalCost.toLocaleString()}</div></div>
+  `;
+}
+
+// ---------------- Home ----------------
+function renderHome() {
+  if (!state.categories.length) {
+    $main.innerHTML = `<div class="empty"><div class="big">整備項目がありません</div><div>⚙設定から「洗車」「オイル交換」などの項目を追加してください</div></div>`;
+    return;
+  }
+  const cards = state.categories.map(cat => {
+    const recs = state.records.filter(r => r.fields.category === cat);
+    const last = recs[0];
+    const lastText = last ? `前回: <b>${escapeHtml(last.date)}</b>` : '記録なし';
+    return `
+      <button class="item-card" data-cat="${escapeHtml(cat)}">
+        <div class="name">${escapeHtml(cat)}</div>
+        <div class="last">${lastText}</div>
+        <span class="quick-add">＋ 日付を記録</span>
+      </button>
+    `;
+  }).join('');
+
+  $main.innerHTML = `<div class="item-grid">${cards}
+    <button class="item-card other-card" id="otherCard"><div class="name">＋ その他を記録</div></button>
+  </div>`;
+
+  $main.querySelectorAll('.item-card[data-cat]').forEach(btn => {
+    btn.addEventListener('click', () => openRecordModal(null, btn.dataset.cat));
+  });
+  document.getElementById('otherCard').addEventListener('click', () => openRecordModal(null, null));
+}
+
+// ---------------- History ----------------
+function renderHistory() {
+  if (!state.records.length) {
+    $main.innerHTML = `<div class="empty"><div class="big">記録はまだありません</div><div>ホームの項目カードから記録を追加しましょう</div></div>`;
+    return;
+  }
+  const filterOpts = ['<option value="">すべての項目</option>'].concat(state.categories.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`)).join('');
+  const list = state.records.filter(r => !state.historyFilter || r.fields.category === state.historyFilter);
+
+  const cards = list.map(r => {
+    const category = r.fields.category ? `<span class="tag">${escapeHtml(r.fields.category)}</span>` : '';
+    const shownKeys = state.fields.filter(f => r.fields[f.key]);
+    const extras = shownKeys.map(f => {
+      let val = r.fields[f.key];
+      if (f.key === 'cost') val = '¥' + Number(val).toLocaleString();
+      return `<span class="f"><span class="fk">${escapeHtml(f.label)}</span><b>${escapeHtml(String(val))}</b></span>`;
+    }).join('');
+    return `
+      <div class="record" data-id="${r.id}">
+        <div class="record-top">
+          <span class="record-date">${escapeHtml(r.date || '')}</span>
+          <span class="odo"><span class="n">${r.mileage ? Number(r.mileage).toLocaleString() : '—'}</span><span class="u">km</span></span>
+        </div>
+        ${category}
+        <div class="record-fields">${extras}</div>
+        <div class="record-actions">
+          <button class="mini-btn" data-action="edit" data-id="${r.id}">編集</button>
+          <button class="mini-btn danger" data-action="delete" data-id="${r.id}">削除</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  $main.innerHTML = `
+    <div class="filter-row"><select id="historyFilter">${filterOpts}</select></div>
+    <div class="timeline">${cards || '<div class="empty"><div class="big">該当する記録がありません</div></div>'}</div>
+  `;
+  document.getElementById('historyFilter').value = state.historyFilter;
+  document.getElementById('historyFilter').addEventListener('change', (e) => { state.historyFilter = e.target.value; renderHistory(); });
+
+  $main.querySelectorAll('[data-action="edit"]').forEach(btn => {
+    btn.addEventListener('click', () => openRecordModal(state.records.find(r => r.id === btn.dataset.id), null));
+  });
+  $main.querySelectorAll('[data-action="delete"]').forEach(btn => {
+    btn.addEventListener('click', () => confirmDelete(btn.dataset.id));
+  });
+}
+
+// ---------------- Record modal (add / edit) ----------------
+function openRecordModal(record, presetCategory) {
+  const isEdit = !!record;
+  const f = record ? record.fields : {};
+  const catOpts = state.categories.map(o => `<option value="${escapeHtml(o)}" ${ (f.category||presetCategory)===o ? 'selected':''}>${escapeHtml(o)}</option>`).join('');
+
+  const extraFieldsHtml = state.fields.map(fld => {
+    const val = f[fld.key] !== undefined ? f[fld.key] : '';
+    let input = '';
+    if (fld.type === 'select') {
+      const opts = (fld.options || '').split(',').map(o => o.trim()).filter(Boolean);
+      input = `<select data-key="${fld.key}"><option value="">選択してください</option>${opts.map(o => `<option value="${escapeHtml(o)}" ${o===val?'selected':''}>${escapeHtml(o)}</option>`).join('')}</select>`;
+    } else if (fld.type === 'textarea') {
+      input = `<textarea data-key="${fld.key}">${escapeHtml(val)}</textarea>`;
+    } else if (fld.type === 'number') {
+      input = `<input type="number" data-key="${fld.key}" value="${escapeHtml(val)}">`;
+    } else if (fld.type === 'date') {
+      input = `<input type="date" data-key="${fld.key}" value="${escapeHtml(val)}">`;
+    } else {
+      input = `<input type="text" data-key="${fld.key}" value="${escapeHtml(val)}">`;
+    }
+    const req = fld.required ? '<span class="req">*</span>' : '';
+    return `<div class="field-group"><label>${escapeHtml(fld.label)}${req}</label>${input}</div>`;
+  }).join('');
+
+  const hasOpenDetails = isEdit && (record.mileage || state.fields.some(fld => f[fld.key]));
+
+  $modalRoot.innerHTML = `
+    <div class="overlay" id="overlay">
+      <div class="modal">
+        <h3>${isEdit ? '記録を編集' : '記録を追加'}<button class="close-x" id="closeModal">×</button></h3>
+        <div class="sub">${isEdit ? '' : '日付を入れるだけでOK。必要なら詳細も追加できます'}</div>
+
+        <div class="field-group">
+          <label>整備項目<span class="req">*</span></label>
+          <select id="rCategory">${catOpts}</select>
+        </div>
+        <div class="field-group">
+          <label>日付<span class="req">*</span></label>
+          <input type="date" id="rDate" value="${record ? record.date : new Date().toISOString().slice(0,10)}">
+        </div>
+
+        <button class="details-toggle" id="detailsToggle">${hasOpenDetails ? '－ 詳細を閉じる' : '＋ 詳細を追加（走行距離・費用など）'}</button>
+        <div class="details-wrap ${hasOpenDetails ? 'open' : ''}" id="detailsWrap">
+          <div class="field-group">
+            <label>走行距離(km)</label>
+            <input type="number" id="rMileage" value="${record && record.mileage ? record.mileage : ''}">
+          </div>
+          ${extraFieldsHtml}
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn" id="cancelBtn">キャンセル</button>
+          <button class="btn primary" id="saveBtn">${isEdit ? '更新する' : '保存する'}</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('closeModal').addEventListener('click', closeModal);
+  document.getElementById('cancelBtn').addEventListener('click', closeModal);
+  document.getElementById('overlay').addEventListener('click', (e) => { if (e.target.id === 'overlay') closeModal(); });
+  document.getElementById('detailsToggle').addEventListener('click', (e) => {
+    const wrap = document.getElementById('detailsWrap');
+    wrap.classList.toggle('open');
+    e.target.textContent = wrap.classList.contains('open') ? '－ 詳細を閉じる' : '＋ 詳細を追加（走行距離・費用など）';
+  });
+  document.getElementById('saveBtn').addEventListener('click', () => saveRecord(record));
+}
+
+function closeModal() { $modalRoot.innerHTML = ''; }
+
+async function saveRecord(existing) {
+  const category = document.getElementById('rCategory').value;
+  const date = document.getElementById('rDate').value;
+  const mileage = document.getElementById('rMileage').value;
+  if (!category) { showToast('整備項目を選択してください', true); return; }
+  if (!date) { showToast('日付を入力してください', true); return; }
+
+  const fields = { category };
+  let missingRequired = null;
+  state.fields.forEach(fld => {
+    const el = document.querySelector(`[data-key="${fld.key}"]`);
+    const val = el ? el.value : '';
+    if (fld.required && !val) missingRequired = fld.label;
+    fields[fld.key] = val;
+  });
+  if (missingRequired) { showToast(`「${missingRequired}」は必須項目です`, true); return; }
+
+  const payload = { date, mileage, fields };
+  try {
+    if (existing) {
+      await apiPost('updateRecord', { id: existing.id, payload });
+      showToast('更新しました');
+    } else {
+      await apiPost('addRecord', { payload });
+      showToast('保存しました');
+    }
+    closeModal();
+    await loadAll();
+  } catch (e) {
+    showToast('保存に失敗しました: ' + e.message, true);
+  }
+}
+
+function confirmDelete(id) {
+  const rec = state.records.find(r => r.id === id);
+  $modalRoot.innerHTML = `
+    <div class="overlay" id="overlay">
+      <div class="modal" style="max-width:400px;">
+        <h3>この記録を削除しますか？</h3>
+        <p style="color:var(--text-muted); font-size:13.5px; margin:0 0 18px;">
+          ${escapeHtml(rec.date || '')} ・ ${escapeHtml(rec.fields.category || '')}<br>この操作は取り消せません。
+        </p>
+        <div class="modal-actions">
+          <button class="btn" id="cancelDel">キャンセル</button>
+          <button class="btn danger" id="doDel">削除する</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('cancelDel').addEventListener('click', closeModal);
+  document.getElementById('overlay').addEventListener('click', (e) => { if (e.target.id === 'overlay') closeModal(); });
+  document.getElementById('doDel').addEventListener('click', async () => {
+    try {
+      await apiPost('deleteRecord', { id });
+      closeModal();
+      showToast('削除しました');
+      await loadAll();
+    } catch (e) {
+      showToast('削除に失敗しました: ' + e.message, true);
+    }
+  });
+}
+
+// ---------------- Settings ----------------
+function renderSettings() {
+  const catChips = state.categories.map((c, i) => `
+    <span class="item-chip" data-idx="${i}">${escapeHtml(c)}<button data-act="delcat">×</button></span>
+  `).join('');
+
+  const fieldRows = state.fields.slice().sort((a,b) => a.order - b.order).map((f, i, arr) => `
+    <div class="field-row" data-key="${f.key}">
+      <span class="fr-type">${typeLabel(f.type)}</span>
+      <span class="fr-label">${escapeHtml(f.label)}${f.required ? ' <span class="req">*</span>' : ''}</span>
+      <div class="fr-actions">
+        <button data-act="up" ${i===0?'disabled':''} title="上へ">↑</button>
+        <button data-act="down" ${i===arr.length-1?'disabled':''} title="下へ">↓</button>
+        <button data-act="del" class="danger" title="削除">✕</button>
+      </div>
+    </div>
+  `).join('');
+
+  $main.innerHTML = `
+    <div class="settings-section">
+      <h3>整備項目（ホーム画面のカード）</h3>
+      <div class="desc">洗車・オイル交換・車検 など、日付を記録したい項目を管理します</div>
+      <div class="chip-row">${catChips || '<span style="color:var(--text-faint); font-size:13px;">項目がありません</span>'}</div>
+      <div class="add-inline">
+        <input type="text" id="newCatInput" placeholder="例: エンジンオイルフィルター交換">
+        <button id="addCatBtn">追加</button>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>その他の記録項目</h3>
+      <div class="desc">費用・実施場所・メモなど、記録の「詳細」に表示される追加項目です</div>
+      ${fieldRows || '<div style="color:var(--text-faint); font-size:13px;">項目がありません</div>'}
+      <div class="add-field-form">
+        <div class="field-group"><label>項目名</label><input type="text" id="newFieldLabel" placeholder="例: 次回車検予定日"></div>
+        <div class="row2">
+          <div class="field-group">
+            <label>入力形式</label>
+            <select id="newFieldType">
+              <option value="text">文字</option><option value="number">数値</option><option value="date">日付</option>
+              <option value="select">選択肢</option><option value="textarea">長文</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label>必須にする</label>
+            <select id="newFieldRequired"><option value="">任意</option><option value="1">必須</option></select>
+          </div>
+        </div>
+        <div class="field-group" id="optionsWrap" style="display:none;">
+          <label>選択肢（カンマ区切り）</label><input type="text" id="newFieldOptions" placeholder="例: 春,夏,秋,冬">
+        </div>
+        <button class="btn primary" id="addFieldBtn" style="width:100%;">項目を追加</button>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('addCatBtn').addEventListener('click', async () => {
+    const v = document.getElementById('newCatInput').value.trim();
+    if (!v) return;
+    if (state.categories.includes(v)) { showToast('すでに存在する項目です', true); return; }
+    state.categories.push(v);
+    await persistAndReload('整備項目を更新しました');
+  });
+  $main.querySelectorAll('.item-chip [data-act="delcat"]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const idx = Number(btn.parentElement.dataset.idx);
+      const name = state.categories[idx];
+      if (!confirm(`「${name}」を削除しますか？（過去の記録データは残ります）`)) return;
+      state.categories.splice(idx, 1);
+      await persistAndReload('整備項目を更新しました');
+    });
+  });
+
+  document.getElementById('newFieldType').addEventListener('change', (e) => {
+    document.getElementById('optionsWrap').style.display = e.target.value === 'select' ? 'block' : 'none';
+  });
+  document.getElementById('addFieldBtn').addEventListener('click', async () => {
+    const label = document.getElementById('newFieldLabel').value.trim();
+    const type = document.getElementById('newFieldType').value;
+    const required = document.getElementById('newFieldRequired').value === '1';
+    const options = document.getElementById('newFieldOptions').value.trim();
+    if (!label) { showToast('項目名を入力してください', true); return; }
+    const key = 'f_' + Date.now().toString(36) + Math.random().toString(36).slice(2,5);
+    const order = state.fields.length ? Math.max(...state.fields.map(f=>Number(f.order)||0)) + 1 : 1;
+    state.fields.push({ order, key, label, type, options, required });
+    await persistAndReload('項目を追加しました');
+  });
+  $main.querySelectorAll('.field-row').forEach(row => {
+    const key = row.dataset.key;
+    row.querySelectorAll('[data-act]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const act = btn.dataset.act;
+        const idx = state.fields.findIndex(f => f.key === key);
+        if (act === 'del') {
+          if (!confirm('この項目を削除しますか？（既存記録のデータは残ります）')) return;
+          state.fields.splice(idx, 1);
+        } else if (act === 'up' && idx > 0) {
+          [state.fields[idx-1].order, state.fields[idx].order] = [state.fields[idx].order, state.fields[idx-1].order];
+        } else if (act === 'down' && idx < state.fields.length - 1) {
+          [state.fields[idx+1].order, state.fields[idx].order] = [state.fields[idx].order, state.fields[idx+1].order];
+        }
+        await persistAndReload('項目を更新しました');
+      });
+    });
+  });
+}
+
+function typeLabel(t) { return { text: '文字', number: '数値', date: '日付', select: '選択', textarea: '長文' }[t] || t; }
+
+async function persistAndReload(msg) {
+  try {
+    await saveAllFields();
+    showToast(msg);
+    await loadAll();
+    state.view = 'settings';
+    render();
+  } catch (e) {
+    showToast('更新に失敗しました: ' + e.message, true);
+  }
+}
+
+init();
+</script>
+</body>
+</html>
