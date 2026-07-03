@@ -92,6 +92,8 @@
   .field-group .req{color:var(--danger); margin-left:2px;}
   .field-group input[type=text], .field-group input[type=number], .field-group input[type=date],
   .field-group select, .field-group textarea{ width:100%; background:var(--bg); border:1px solid var(--border); border-radius:8px; color:var(--text); padding:10px 11px; font-size:14px; }
+  .field-group select option{ background:var(--surface); color:var(--text); }
+  .field-group input[type=date]::-webkit-calendar-picker-indicator{ filter:invert(1); opacity:0.85; cursor:pointer; }
   .field-group input:focus, .field-group select:focus, .field-group textarea:focus{ outline:none; border-color:var(--amber-dim); }
   .field-group textarea{min-height:60px; resize:vertical;}
   .details-toggle{ background:none; border:none; color:var(--blue); font-size:13px; padding:4px 0 14px; text-align:left; }
@@ -155,7 +157,7 @@
    下のシングルクォートの中に入力して保存すれば、このファイルを開くだけで
    自動的にそのスプレッドシートに繋がります（誰がどの端末で開いても同じ）。
    ============================================================ */
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxBCGZ5Iww0bpYpHfXtXFG-ZBbn-Z-GcjW-DoDNcVtFDXzmz7P8axTY0NEx1RoYvKpAnQ/exec';
+const APPS_SCRIPT_URL = '';
 
 let state = {
   fields: [],          // category以外の追加項目（費用・実施場所・メモなど）
@@ -191,6 +193,19 @@ function showToast(msg, isErr) {
 }
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function formatNum(v) {
+  const digits = String(v).replace(/[^0-9]/g, '');
+  return digits ? Number(digits).toLocaleString('en-US') : '';
+}
+function unformatNum(v) {
+  return String(v || '').replace(/,/g, '');
+}
+function formatDateJp(dateStr) {
+  if (!dateStr) return '';
+  const m = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return dateStr;
+  return `${m[1]}年${Number(m[2])}月${Number(m[3])}日`;
 }
 
 async function init() {
@@ -275,11 +290,11 @@ function renderNotConnected() {
 function renderStats() {
   if (!state.records.length) { $stats.style.display = 'none'; return; }
   $stats.style.display = 'flex';
-  const latest = state.records[0];
+  const latestWithMileage = state.records.find(r => r.mileage);
   const totalCost = state.records.reduce((sum, r) => sum + (Number(r.fields.cost) || 0), 0);
   $stats.innerHTML = `
     <div class="stat-chip"><div class="label">記録数</div><div class="value">${state.records.length}件</div></div>
-    <div class="stat-chip"><div class="label">最新走行距離</div><div class="value">${latest.mileage ? Number(latest.mileage).toLocaleString() + ' km' : '—'}</div></div>
+    <div class="stat-chip"><div class="label">最新走行距離</div><div class="value">${latestWithMileage ? Number(latestWithMileage.mileage).toLocaleString() + ' km' : '—'}</div></div>
     <div class="stat-chip"><div class="label">累計費用</div><div class="value">¥${totalCost.toLocaleString()}</div></div>
   `;
 }
@@ -293,7 +308,7 @@ function renderHome() {
   const cards = state.categories.map(cat => {
     const recs = state.records.filter(r => r.fields.category === cat);
     const last = recs[0];
-    const lastText = last ? `前回: <b>${escapeHtml(last.date)}</b>` : '記録なし';
+    const lastText = last ? `前回: <b>${escapeHtml(formatDateJp(last.date))}</b>` : '記録なし';
     return `
       <button class="item-card" data-cat="${escapeHtml(cat)}">
         <div class="name">${escapeHtml(cat)}</div>
@@ -333,7 +348,7 @@ function renderHistory() {
     return `
       <div class="record" data-id="${r.id}">
         <div class="record-top">
-          <span class="record-date">${escapeHtml(r.date || '')}</span>
+          <span class="record-date">${escapeHtml(formatDateJp(r.date))}</span>
           <span class="odo"><span class="n">${r.mileage ? Number(r.mileage).toLocaleString() : '—'}</span><span class="u">km</span></span>
         </div>
         ${category}
@@ -376,7 +391,7 @@ function openRecordModal(record, presetCategory) {
     } else if (fld.type === 'textarea') {
       input = `<textarea data-key="${fld.key}">${escapeHtml(val)}</textarea>`;
     } else if (fld.type === 'number') {
-      input = `<input type="number" data-key="${fld.key}" value="${escapeHtml(val)}">`;
+      input = `<input type="text" inputmode="numeric" class="num-input" data-key="${fld.key}" value="${val ? formatNum(val) : ''}">`;
     } else if (fld.type === 'date') {
       input = `<input type="date" data-key="${fld.key}" value="${escapeHtml(val)}">`;
     } else {
@@ -407,7 +422,7 @@ function openRecordModal(record, presetCategory) {
         <div class="details-wrap ${hasOpenDetails ? 'open' : ''}" id="detailsWrap">
           <div class="field-group">
             <label>走行距離(km)</label>
-            <input type="number" id="rMileage" value="${record && record.mileage ? record.mileage : ''}">
+            <input type="text" inputmode="numeric" class="num-input" id="rMileage" value="${record && record.mileage ? formatNum(record.mileage) : ''}">
           </div>
           ${extraFieldsHtml}
         </div>
@@ -422,6 +437,9 @@ function openRecordModal(record, presetCategory) {
   document.getElementById('closeModal').addEventListener('click', closeModal);
   document.getElementById('cancelBtn').addEventListener('click', closeModal);
   document.getElementById('overlay').addEventListener('click', (e) => { if (e.target.id === 'overlay') closeModal(); });
+  $modalRoot.querySelectorAll('.num-input').forEach(el => {
+    el.addEventListener('input', () => { el.value = formatNum(el.value); });
+  });
   document.getElementById('detailsToggle').addEventListener('click', (e) => {
     const wrap = document.getElementById('detailsWrap');
     wrap.classList.toggle('open');
@@ -435,7 +453,7 @@ function closeModal() { $modalRoot.innerHTML = ''; }
 async function saveRecord(existing) {
   const category = document.getElementById('rCategory').value;
   const date = document.getElementById('rDate').value;
-  const mileage = document.getElementById('rMileage').value;
+  const mileage = unformatNum(document.getElementById('rMileage').value);
   if (!category) { showToast('整備項目を選択してください', true); return; }
   if (!date) { showToast('日付を入力してください', true); return; }
 
@@ -443,7 +461,8 @@ async function saveRecord(existing) {
   let missingRequired = null;
   state.fields.forEach(fld => {
     const el = document.querySelector(`[data-key="${fld.key}"]`);
-    const val = el ? el.value : '';
+    let val = el ? el.value : '';
+    if (fld.type === 'number') val = unformatNum(val);
     if (fld.required && !val) missingRequired = fld.label;
     fields[fld.key] = val;
   });
@@ -472,7 +491,7 @@ function confirmDelete(id) {
       <div class="modal" style="max-width:400px;">
         <h3>この記録を削除しますか？</h3>
         <p style="color:var(--text-muted); font-size:13.5px; margin:0 0 18px;">
-          ${escapeHtml(rec.date || '')} ・ ${escapeHtml(rec.fields.category || '')}<br>この操作は取り消せません。
+          ${escapeHtml(formatDateJp(rec.date))} ・ ${escapeHtml(rec.fields.category || '')}<br>この操作は取り消せません。
         </p>
         <div class="modal-actions">
           <button class="btn" id="cancelDel">キャンセル</button>
